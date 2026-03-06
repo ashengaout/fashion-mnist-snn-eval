@@ -1,0 +1,22 @@
+# Data files
+data/*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+
+# Virtual environment
+venv/
+.venv/
+
+# PyCharm
+.idea/
+
+# Jupyter (in case you keep the EDA notebook around)
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
