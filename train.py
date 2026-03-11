@@ -80,11 +80,11 @@ def evaluate_accuracy(model, data_loader, device, num_steps):
 #-----Training Loop--------------------------------------------------------
 
 def train(
-        epochs: int = 5,
+        epochs: int = 15,
         lr: float = 1e-3,
         batch_size: int = 128,
         beta: float = 0.95,
-        num_steps: int = 50,
+        num_steps: int = 25,
         val_split: float = 0.2,
         train_csv_path: str = "Fashion-MNIST-SNN-train.csv",
         test_csv_path: str = "Fashion-MNIST-SNN-test.csv",
@@ -196,11 +196,11 @@ def train(
 #Entry point
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train FashionSNN")
-    parser.add_argument("--epochs",     type=int,   default=5,     help="Number of epochs")
+    parser.add_argument("--epochs",     type=int,   default=15,     help="Number of epochs")
     parser.add_argument("--lr",         type=float, default=1e-3,  help="Learning rate")
     parser.add_argument("--batch_size", type=int,   default=128,   help="Batch size")
     parser.add_argument("--beta",       type=float, default=0.95,  help="LIF decay rate")
-    parser.add_argument("--num_steps",  type=int,   default=50,   help="Time steps (T)")
+    parser.add_argument("--num_steps",  type=int,   default=25,   help="Time steps (T)")
     parser.add_argument("--val_split",  type=float, default=0.2,   help="Validation split fraction")
     parser.add_argument("--train_csv",  type=str,   default="data/fashion-mnist_train.csv")
     parser.add_argument("--test_csv",   type=str,   default="data/fashion-mnist_test.csv")
