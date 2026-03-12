@@ -31,6 +31,7 @@ import time
 import torch
 import torch.nn as nn
 from torch.utils.data import random_split, DataLoader
+from utils.logger import ExperimentLogger
 
 from dataloader import load_fashion_mnist
 from encode import encode_latency
@@ -80,7 +81,7 @@ def evaluate_accuracy(model, data_loader, device, num_steps):
 #-----Training Loop--------------------------------------------------------
 
 def train(
-        epochs: int = 15,
+        epochs: int = 30,
         lr: float = 1e-3,
         batch_size: int = 128,
         beta: float = 0.95,
@@ -127,9 +128,27 @@ def train(
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode='max',
+        factor=0.5,
+        patience=5,
+        min_lr=1e-5
+    )
+
     #----Training------------------------------------------------------------
     print(f"\nTraining for {epochs} epoch(s)...\n")
     history = {"train_loss": [], "train_acc": [], "val_acc": []}
+
+    #Experimental Logger
+    logger = ExperimentLogger("experiments.md", experiment_num=1)
+    logger.log_config({
+        "beta": 0.95,
+        "num_steps": 25,
+        "lr": "scheduler",
+        "batch_size": 128,
+        "epochs": 30,
+    })
 
     for epoch in range(1, epochs+1):
         model.train()
@@ -169,20 +188,21 @@ def train(
         #--- Epoch summary---------------------
         train_acc = correct / total
         val_acc = evaluate_accuracy(model, val_loader, device, num_steps)
+        scheduler.step(val_acc)
         avg_loss = epoch_loss / len(train_loader)
         elapsed = time.time() - t0
+
+        logger.log_epoch(epoch, avg_loss, train_acc * 100, val_acc * 100, elapsed,
+                         lr=optimizer.param_groups[0]['lr'])
 
         history["train_loss"].append(avg_loss)
         history["train_acc"].append(train_acc)
         history["val_acc"].append(val_acc)
 
-        print(
-            f"\nEpoch {epoch}/{epochs} | "
-            f"Loss: {avg_loss:.4f} | "
-            f"Train Acc: {train_acc:.2%} | "
-            f"Val Acc: {val_acc:.2%} | "
-            f"Time: {elapsed:.1f}s\n"
-        )
+        current_lr = optimizer.param_groups[0]['lr']
+        print(f"\nEpoch {epoch}/{epochs} | Loss: {avg_loss:.4f} | "
+              f"Train Acc: {train_acc:.2%} | Val Acc: {val_acc:.2%} | "
+              f"LR: {current_lr:.2e} | Time: {elapsed:.1f}s\n")
 
     #final test evaluation
     print("=" * 60)
@@ -191,12 +211,14 @@ def train(
     print(f"Final Test Accuracy : {test_acc:.2%}")
     print("=" * 60)
 
+    logger.save(test_acc=test_acc * 100)
+
     return model, history, test_acc
 
 #Entry point
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train FashionSNN")
-    parser.add_argument("--epochs",     type=int,   default=15,     help="Number of epochs")
+    parser.add_argument("--epochs",     type=int,   default=30,     help="Number of epochs")
     parser.add_argument("--lr",         type=float, default=1e-3,  help="Learning rate")
     parser.add_argument("--batch_size", type=int,   default=128,   help="Batch size")
     parser.add_argument("--beta",       type=float, default=0.95,  help="LIF decay rate")
