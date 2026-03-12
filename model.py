@@ -51,6 +51,10 @@ class FashionSNN(nn.Module):
         self.lif2 = snn.Leaky(beta=beta)
         self.lif3 = snn.Leaky(beta=beta)
 
+        #Dropout layers
+        self.drop1 = nn.Dropout(p=0.2)
+        self.drop2 = nn.Dropout(p=0.2)
+
         """
         Forward pass over T time steps.
 
@@ -87,15 +91,17 @@ class FashionSNN(nn.Module):
 
             #layer 1: FC -> LiF
             cur1 = self.fc1(x_t)
-            spk1, mem1 = self.lif2(cur1, mem1)
+            spk1, mem1 = self.lif1(cur1, mem1)
+            spk1 = self.drop1(spk1)
 
             #layer 2: FC -> LiF
             cur2 = self.fc2(spk1)
-            spk2, mem2 = self.lif3(cur2, mem2)
+            spk2, mem2 = self.lif2(cur2, mem2)
+            spk2 = self.drop2(spk2)
 
             #layer 3 (output): FC -> LiF
-            mem3 = self.fc3(spk2)
-            spk3, mem3 = self.lif3(mem3, mem3)
+            cur3 = self.fc3(spk2)
+            spk3, mem3 = self.lif3(cur3, mem3)
 
             #Accumulate output spikes and record membrane potential
             spike_counts += spk3

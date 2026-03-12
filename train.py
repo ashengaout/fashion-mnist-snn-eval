@@ -81,7 +81,7 @@ def evaluate_accuracy(model, data_loader, device, num_steps):
 #-----Training Loop--------------------------------------------------------
 
 def train(
-        epochs: int = 25,
+        epochs: int = 30,
         lr: float = 1e-3,
         batch_size: int = 128,
         beta: float = 0.95,
@@ -141,13 +141,13 @@ def train(
     history = {"train_loss": [], "train_acc": [], "val_acc": []}
 
     #Experimental Logger
-    logger = ExperimentLogger("experiments.md", experiment_num=8)
+    logger = ExperimentLogger("experiments.md", experiment_num=1)
     logger.log_config({
         "beta": 0.95,
         "num_steps": 25,
         "lr": "scheduler",
         "batch_size": 128,
-        "epochs": 25,
+        "epochs": 30,
     })
 
     for epoch in range(1, epochs+1):
@@ -218,7 +218,7 @@ def train(
 #Entry point
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train FashionSNN")
-    parser.add_argument("--epochs",     type=int,   default=25,     help="Number of epochs")
+    parser.add_argument("--epochs",     type=int,   default=30,     help="Number of epochs")
     parser.add_argument("--lr",         type=float, default=1e-3,  help="Learning rate")
     parser.add_argument("--batch_size", type=int,   default=128,   help="Batch size")
     parser.add_argument("--beta",       type=float, default=0.95,  help="LIF decay rate")

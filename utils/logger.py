@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 
 class ExperimentLogger:
-    def __init__(self, log_path="experiments.md", experiment_num=8):
+    def __init__(self, log_path="experiments.md", experiment_num=1):
         self.log_path = Path(log_path)
         self.exp_num = experiment_num
         self.epoch_rows = []
