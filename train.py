@@ -27,11 +27,13 @@ Usage:
 """
 
 import argparse
+import numpy as np
 import time
 import torch
 import torch.nn as nn
 from torch.utils.data import random_split, DataLoader
 from utils.logger import ExperimentLogger
+import os
 
 from dataloader import load_fashion_mnist
 from encode import encode_latency
@@ -90,6 +92,9 @@ def train(
         train_csv_path: str = "Fashion-MNIST-SNN-train.csv",
         test_csv_path: str = "Fashion-MNIST-SNN-test.csv",
 ):
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
+    np.random.seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
@@ -212,6 +217,10 @@ def train(
     print("=" * 60)
 
     logger.save(test_acc=test_acc * 100)
+
+    os.makedirs("results/models", exist_ok=True)
+    torch.save(model.state_dict(), f"results/models/best_model.pth")
+    print("Model saved to results/models")
 
     return model, history, test_acc
 
