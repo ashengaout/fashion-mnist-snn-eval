@@ -38,6 +38,7 @@ SNNs represent a third generation of neural networks inspired by biological neur
 | Layer 2 Sparsity | 79.74% silent |
 | Layer 3 Sparsity | 86.32% silent |
 | Total Synaptic Ops | 1,127,899,850,240 |
+| Input Sparsity (mean) | 98.0% silent |
 
 ---
 
@@ -51,6 +52,10 @@ SNNs represent a third generation of neural networks inspired by biological neur
 - Regularization: Dropout (p=0.2)
 - Scheduler: ReduceLROnPlateau (patience=5, factor=0.5)
 
+**Baselines**
+- SVM (RBF kernel)
+- Naive Bayes
+
 **Framework:** PyTorch + SNNTorch
 
 ---
@@ -61,9 +66,10 @@ SNNs represent a third generation of neural networks inspired by biological neur
 SNN Classifier/
 ├── data/                        # See data/README.md for download instructions
 ├── experiment_logs/
-│   └── 01_SNN_optimization_log.md   # Full hyperparameter optimization history
+│   └── 01_SNN_optimization_log.md   # Full hyperparameter optimization history (14 experiments)
 ├── results/
-│   ├── figures/                 # Confusion matrix, per-class accuracy, sparsity plots
+│   ├── eda/                     # EDA figures — spike heatmaps, raster plots, membrane potentials
+│   ├── figures/                 # Evaluation figures — confusion matrix, per-class accuracy, sparsity
 │   ├── metrics/                 # snn_eval_summary.txt
 │   └── models/
 │       └── best_model.pth       # Final trained SNN weights
@@ -74,6 +80,7 @@ SNN Classifier/
 ├── model.py                     # LIF SNN architecture
 ├── train.py                     # Training loop with scheduler and logging
 ├── evaluate.py                  # Full evaluation suite (metrics + plots)
+├── eda.py                       # EDA and spike visualization suite
 ├── requirements.txt
 └── README.md
 ```
@@ -109,6 +116,27 @@ python evaluate.py
 ```
 
 Generates accuracy (mean ± std over 5 runs), F1, confusion matrix, per-class accuracy, sparsity rates, and synaptic operation counts. All figures saved to `results/figures/`.
+
+---
+
+## EDA & Spike Visualizations
+
+```bash
+python eda.py
+```
+
+Generates the following figures saved to `results/eda/`:
+
+| Figure | Description |
+|--------|-------------|
+| `sample_images.png` | One sample per class |
+| `class_distribution.png` | Confirms perfectly balanced dataset (6,000 per class) |
+| `pixel_intensity.png` | Pixel intensity histogram — motivates latency encoding (high zero density) |
+| `spike_timing_heatmap_*.png` | 28×28 grid showing when each pixel fires — one per class |
+| `spike_raster_*.png` | Raster plot of 100 input neurons over 25 timesteps |
+| `sparsity_over_timesteps.png` | 98% mean input sparsity — supports energy efficiency argument |
+| `layer_activity_*.png` | Firing rate per layer per timestep — shows spike propagation |
+| `membrane_potential_neuron*.png` | LIF neuron voltage trace and spike events over time |
 
 ---
 
