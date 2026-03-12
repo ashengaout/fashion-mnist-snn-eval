@@ -1,0 +1,45 @@
+
+============================================================
+  SNN EVALUATION SUMMARY
+============================================================
+
+Mean Test Accuracy : 84.51% (± 0.00% over 5 runs)
+Macro F1 Score     : 84.37%
+Avg Inference Time : 0.382 ms/sample
+Total Synaptic Ops : 1,127,899,850,240
+
+── Per-Class Accuracy ──────────────────────────────
+  T-shirt/top     83.90%
+  Trouser         96.20%
+  Pullover        78.80%
+  Dress           91.30%
+  Coat            88.00%
+  Sandal          92.30%
+  Shirt           64.20%
+  Sneaker         85.40%
+  Bag             96.70%
+  Ankle boot      68.30%
+
+── Sparsity (% silent neurons) ─────────────────────
+  layer_1 : 93.48% silent
+  layer_2 : 79.74% silent
+  layer_3 : 86.32% silent
+
+── Full Classification Report ──────────────────────
+              precision    recall  f1-score   support
+
+ T-shirt/top       0.79      0.84      0.81      1000
+     Trouser       0.98      0.96      0.97      1000
+    Pullover       0.87      0.79      0.83      1000
+       Dress       0.89      0.91      0.90      1000
+        Coat       0.79      0.88      0.83      1000
+      Sandal       0.79      0.92      0.85      1000
+       Shirt       0.73      0.64      0.68      1000
+     Sneaker       0.76      0.85      0.80      1000
+         Bag       0.98      0.97      0.97      1000
+  Ankle boot       0.91      0.68      0.78      1000
+
+    accuracy                           0.85     10000
+   macro avg       0.85      0.85      0.84     10000
+weighted avg       0.85      0.85      0.84     10000
+
