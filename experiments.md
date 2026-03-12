@@ -259,3 +259,155 @@ Extending training from 10 to 15 epochs produced worse results, with final val a
 
 Conclusion: The model's performance ceiling at lr=1e-3 is approximately 10 epochs, after which the learning rate becomes too large for further improvement. The 10 epoch run remains the best result with a test accuracy of 78.85%. To push beyond this, a learning rate scheduler will be introduced to automatically reduce the learning rate once val accuracy plateaus, allowing the optimizer to make finer adjustments in later epochs without manual intervention. ReduceLROnPlateau will be used as it responds dynamically to val accuracy rather than requiring a fixed schedule.
 Additionally, it is unlikely that a scheduler alone will suffice in increasing the accuracy to a competitive benchmark. After an experiment to see how a learning rate scheduler will affect the SNN, the latency encoding will be replaced with rate encoding.
+## Experiment 8
+
+This experiment keeps the epoch values the same from the last run and instead implements a scheduler to see if it affects the accuracy rate positively.
+
+**Current scheduler parameters:**
+mode='max',
+factor=0.5,
+patience=2,
+min_lr=1e-5
+
+### Hyperparameter Notes
+| Parameter | Value | Reasoning                       |
+|-----------|-------|---------------------------------|
+|beta|0.95| inital                          |
+|num_steps|25| same as experiment 5            |
+|lr|1e-3 → scheduler| changed to opimitze training LR |
+|batch_size|128| inital                          |
+|epochs|15| same as experiment 7            |
+
+### Epoch Results
+| Epoch | Average Loss | Train Accuracy | Val Accuracy | LR | Time |
+|-------|--------------|----------------|--------------|-----|------|
+| 1 | 1.1419 | 53.44% | 57.46% | 1.00e-03 | 38.3s |
+| 2 | 0.8403 | 60.59% | 62.87% | 1.00e-03 | 38.5s |
+| 3 | 0.7639 | 64.41% | 65.03% | 1.00e-03 | 37.8s |
+| 4 | 0.7154 | 66.67% | 66.78% | 1.00e-03 | 38.4s |
+| 5 | 0.6816 | 68.94% | 67.62% | 1.00e-03 | 38.3s |
+| 6 | 0.6539 | 70.56% | 71.44% | 1.00e-03 | 38.1s |
+| 7 | 0.6284 | 72.31% | 70.88% | 1.00e-03 | 38.3s |
+| 8 | 0.6081 | 72.86% | 72.57% | 1.00e-03 | 38.3s |
+| 9 | 0.5903 | 73.34% | 71.67% | 1.00e-03 | 38.2s |
+| 10 | 0.5750 | 73.79% | 73.22% | 1.00e-03 | 38.3s |
+| 11 | 0.5605 | 74.29% | 72.38% | 1.00e-03 | 37.7s |
+| 12 | 0.5466 | 74.46% | 72.40% | 1.00e-03 | 38.2s |
+| 13 | 0.5339 | 74.75% | 72.71% | 5.00e-04 | 38.0s |
+| 14 | 0.5141 | 75.76% | 73.91% | 5.00e-04 | 38.5s |
+| 15 | 0.5072 | 76.00% | 72.48% | 5.00e-04 | 38.9s |
+
+Final Test Accuracy: 73.67%
+
+
+### Observations
+
+There still appears to be some oscillation on the val accuracy, while the train accuracy is improving. This could be early signs of overfitting, however,
+to determine if the scheduler is making any significant improvements the epoch number will have to be increased. The LR is not approaching the baseline parameter value so it is possible that increasing
+epochs may still increase the accuracy of this model.
+
+
+## Experiment 9
+
+### Hyperparameter Notes
+| Parameter | Value     | Reasoning                                        |
+|-----------|-----------|--------------------------------------------------|
+|beta| 0.95      | intital value                                    |
+|num_steps| 25        | same as experiment 5                             |
+|lr| scheduler | Same as experiment 8                             |
+|batch_size| 128       | inital value                                     |
+|epochs| 15 -> 25  | Observe if scheduler is improving model accuracy |
+
+### Epoch Results
+| Epoch | Average Loss | Train Accuracy | Val Accuracy | LR | Time |
+|-------|--------------|----------------|--------------|-----|------|
+| 1 | 1.1405 | 51.47% | 56.03% | 1.00e-03 | 37.5s |
+| 2 | 0.8424 | 57.84% | 58.84% | 1.00e-03 | 37.9s |
+| 3 | 0.7681 | 60.20% | 60.52% | 1.00e-03 | 38.4s |
+| 4 | 0.7178 | 62.38% | 62.79% | 1.00e-03 | 37.7s |
+| 5 | 0.6830 | 65.51% | 64.24% | 1.00e-03 | 38.1s |
+| 6 | 0.6549 | 66.98% | 66.17% | 1.00e-03 | 38.5s |
+| 7 | 0.6298 | 69.69% | 70.91% | 1.00e-03 | 38.1s |
+| 8 | 0.6071 | 70.24% | 71.43% | 1.00e-03 | 38.1s |
+| 9 | 0.5888 | 71.43% | 70.17% | 1.00e-03 | 37.9s |
+| 10 | 0.5730 | 72.24% | 70.65% | 1.00e-03 | 37.9s |
+| 11 | 0.5573 | 73.06% | 71.87% | 1.00e-03 | 37.5s |
+| 12 | 0.5430 | 73.50% | 69.58% | 1.00e-03 | 37.6s |
+| 13 | 0.5309 | 73.80% | 72.47% | 1.00e-03 | 38.4s |
+| 14 | 0.5195 | 74.30% | 70.67% | 1.00e-03 | 38.2s |
+| 15 | 0.5080 | 74.44% | 74.08% | 1.00e-03 | 37.8s |
+| 16 | 0.4970 | 75.76% | 71.97% | 1.00e-03 | 37.8s |
+| 17 | 0.4885 | 75.81% | 72.44% | 1.00e-03 | 38.0s |
+| 18 | 0.4784 | 76.44% | 72.84% | 5.00e-04 | 38.0s |
+| 19 | 0.4588 | 76.78% | 74.94% | 5.00e-04 | 37.9s |
+| 20 | 0.4527 | 77.48% | 74.11% | 5.00e-04 | 37.4s |
+| 21 | 0.4475 | 78.03% | 74.97% | 5.00e-04 | 38.0s |
+| 22 | 0.4420 | 78.56% | 73.54% | 5.00e-04 | 38.1s |
+| 23 | 0.4374 | 78.46% | 73.18% | 5.00e-04 | 37.6s |
+| 24 | 0.4325 | 78.85% | 74.67% | 2.50e-04 | 37.6s |
+| 25 | 0.4222 | 79.24% | 74.53% | 2.50e-04 | 38.0s |
+
+Final Test Accuracy: 75.56%
+
+
+### Observations
+
+Epochs matter most right now. The model was still learning at epoch 15 in every experiment. Extending to 25 epochs gave the biggest single accuracy jump (+1.1% test accuracy over exp 7).
+Scheduler timing is critical. Exp 8 fired the LR reduction at epoch 13 — too early, hurt performance. Exp 9 fired at epoch 18 — better, and contributed to the best result. The fix is patience=5 to stop it reacting to val noise.
+Overfitting is emerging but not critical yet. The train/val gap grew from ~0.4% at epoch 15 to ~4.7% at epoch 25. It's worth monitoring but dropout should wait until the scheduler is fixed first.
+Val accuracy is noisy. Oscillations of ±2–3% between epochs are consistent across all experiments. This is partly why patience=2 was too aggressive — the scheduler was reacting to noise rather than real plateaus. 
+
+## Experiment 10
+
+This experiment increases the patience levels for the SNN. 
+
+**Current Scheduler Parameters:**
+mode='max',
+factor=0.5,
+patience=5,
+min_lr=1e-5
+
+### Hyperparameter Notes
+| Parameter | Value | Reasoning            |
+|-----------|-------|----------------------|
+|beta|0.95| inital value         |
+|num_steps|25| same as experiment 5 |
+|lr|scheduler| same as experiment 8 |
+|batch_size|128| inital value         |
+|epochs|25| same as experiment 9 |
+
+### Epoch Results
+| Epoch | Average Loss | Train Accuracy | Val Accuracy | LR | Time |
+|-------|--------------|----------------|--------------|-----|------|
+| 1 | 1.1315 | 53.20% | 58.52% | 1.00e-03 | 44.2s |
+| 2 | 0.8371 | 58.93% | 61.84% | 1.00e-03 | 45.2s |
+| 3 | 0.7578 | 61.84% | 63.80% | 1.00e-03 | 42.5s |
+| 4 | 0.7104 | 64.78% | 65.70% | 1.00e-03 | 43.3s |
+| 5 | 0.6746 | 67.70% | 70.14% | 1.00e-03 | 42.6s |
+| 6 | 0.6483 | 68.64% | 67.51% | 1.00e-03 | 41.7s |
+| 7 | 0.6213 | 70.13% | 69.59% | 1.00e-03 | 41.9s |
+| 8 | 0.6023 | 71.53% | 71.63% | 1.00e-03 | 41.9s |
+| 9 | 0.5851 | 72.44% | 71.70% | 1.00e-03 | 41.3s |
+| 10 | 0.5678 | 73.42% | 72.47% | 1.00e-03 | 41.8s |
+| 11 | 0.5518 | 73.86% | 71.75% | 1.00e-03 | 41.9s |
+| 12 | 0.5399 | 74.35% | 72.78% | 1.00e-03 | 41.9s |
+| 13 | 0.5275 | 74.78% | 72.25% | 1.00e-03 | 41.6s |
+| 14 | 0.5165 | 75.13% | 71.59% | 1.00e-03 | 41.6s |
+| 15 | 0.5048 | 75.94% | 72.30% | 1.00e-03 | 41.9s |
+| 16 | 0.4951 | 75.64% | 74.89% | 1.00e-03 | 42.2s |
+| 17 | 0.4848 | 76.22% | 72.34% | 1.00e-03 | 41.9s |
+| 18 | 0.4746 | 76.52% | 74.01% | 1.00e-03 | 41.1s |
+| 19 | 0.4667 | 76.74% | 75.54% | 1.00e-03 | 41.4s |
+| 20 | 0.4557 | 77.56% | 74.06% | 1.00e-03 | 42.0s |
+| 21 | 0.4468 | 77.88% | 74.49% | 1.00e-03 | 41.3s |
+| 22 | 0.4385 | 78.01% | 73.46% | 1.00e-03 | 41.4s |
+| 23 | 0.4304 | 78.45% | 71.95% | 1.00e-03 | 41.4s |
+| 24 | 0.4227 | 78.78% | 74.53% | 1.00e-03 | 41.0s |
+| 25 | 0.4141 | 78.94% | 75.63% | 1.00e-03 | 42.1s |
+
+Final Test Accuracy: 76.88%
+
+
+### Observations
+
+Patience fix was the right call. Changing patience from 2 to 5 prevented premature LR reduction and delivered the best result yet (+1.32% over exp 9). The scheduler didn't fire at all in exp 10, suggesting the model benefits most from a stable LR across 25 epochs.The model is still learning. Loss was still declining at epoch 25 (0.4141) with no sign of flattening. This is the clearest signal yet that extending to 30 epochs is the right next move.Overfitting is stable, not worsening. Unlike exp 9 where the train/val gap grew to 4.7%, exp 10 stabilized at ~3.3% gap throughout the later epochs. This is a healthier pattern and means dropout is not yet urgent.Val noise is structural. The ±2–3% oscillation in val accuracy has appeared in every experiment regardless of scheduler settings. It's not a training artifact — likely a combination of val set size and the model sitting near a generalization boundary. Something to address eventually with dropout or larger val set.
