@@ -26,7 +26,7 @@ SNNs represent a third generation of neural networks inspired by biological neur
 | Model | Test Accuracy | Notes |
 |-------|-------------|-------|
 | FC-LIF SNN | **84.51% ± 0.00%** | Latency encoding, 25 timesteps |
-| SVM | TBD | RBF kernel baseline |
+| SVM | **90.00%** | RBF kernel baseline |
 | Naive Bayes | TBD | Probabilistic baseline |
 
 **SNN Efficiency Metrics**
