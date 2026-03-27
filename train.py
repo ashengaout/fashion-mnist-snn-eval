@@ -27,6 +27,9 @@ Usage:
 """
 
 import argparse
+import shutil
+from typing import Optional
+
 import numpy as np
 import time
 import torch
@@ -91,10 +94,13 @@ def train(
         val_split: float = 0.2,
         train_csv_path: str = "Fashion-MNIST-SNN-train.csv",
         test_csv_path: str = "Fashion-MNIST-SNN-test.csv",
+        seed: int = 42,
+        experiment_num: int = 1,
+        ckpt_path: Optional[str] = None,
 ):
-    torch.manual_seed(42)
-    torch.cuda.manual_seed(42)
-    np.random.seed(42)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
@@ -106,7 +112,11 @@ def train(
     val_size = int(len(full_dataset) * val_split)
     train_size = len(full_dataset) - val_size
 
-    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42))
+    train_dataset, val_dataset = random_split(
+        full_dataset,
+        [train_size, val_size],
+        generator=torch.Generator().manual_seed(seed),
+    )
 
     train_loader = DataLoader(
         train_dataset,
@@ -146,14 +156,19 @@ def train(
     history = {"train_loss": [], "train_acc": [], "val_acc": []}
 
     #Experimental Logger
-    logger = ExperimentLogger("experiments.md", experiment_num=1)
+    logger = ExperimentLogger("experiments.md", experiment_num=experiment_num)
     logger.log_config({
-        "beta": 0.95,
-        "num_steps": 25,
-        "lr": "scheduler",
-        "batch_size": 128,
-        "epochs": 30,
+        "seed": seed,
+        "beta": beta,
+        "num_steps": num_steps,
+        "lr_initial": lr,
+        "batch_size": batch_size,
+        "epochs": epochs,
     })
+
+    best_val_acc = -1.0
+    best_state = None
+    best_epoch = 0
 
     for epoch in range(1, epochs+1):
         model.train()
@@ -204,12 +219,22 @@ def train(
         history["train_acc"].append(train_acc)
         history["val_acc"].append(val_acc)
 
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            best_epoch = epoch
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+
         current_lr = optimizer.param_groups[0]['lr']
         print(f"\nEpoch {epoch}/{epochs} | Loss: {avg_loss:.4f} | "
               f"Train Acc: {train_acc:.2%} | Val Acc: {val_acc:.2%} | "
               f"LR: {current_lr:.2e} | Time: {elapsed:.1f}s\n")
 
-    #final test evaluation
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        model.to(device)
+    print(f"Best validation accuracy: {best_val_acc:.2%} (epoch {best_epoch})")
+
+    #final test evaluation (weights = best val checkpoint)
     print("=" * 60)
     print("Training complete! Running final evaluation on test set...")
     test_acc = evaluate_accuracy(model, test_loader, device, num_steps)
@@ -219,13 +244,16 @@ def train(
     logger.save(test_acc=test_acc * 100)
 
     os.makedirs("results/models", exist_ok=True)
-    torch.save(model.state_dict(), f"results/models/best_model.pth")
-    print("Model saved to results/models")
+    out_path = ckpt_path or "results/models/best_model.pth"
+    torch.save(model.state_dict(), out_path)
+    print(f"Best-val checkpoint saved to {out_path}")
 
-    return model, history, test_acc
+    return model, history, test_acc, best_val_acc, best_epoch
 
 #Entry point
 if __name__ == "__main__":
+    import json
+
     parser = argparse.ArgumentParser(description="Train FashionSNN")
     parser.add_argument("--epochs",     type=int,   default=30,     help="Number of epochs")
     parser.add_argument("--lr",         type=float, default=1e-3,  help="Learning rate")
@@ -235,15 +263,78 @@ if __name__ == "__main__":
     parser.add_argument("--val_split",  type=float, default=0.2,   help="Validation split fraction")
     parser.add_argument("--train_csv",  type=str,   default="data/fashion-mnist_train.csv")
     parser.add_argument("--test_csv",   type=str,   default="data/fashion-mnist_test.csv")
+    parser.add_argument("--seed",       type=int,   default=42,    help="Base random seed (single run)")
+    parser.add_argument(
+        "--trials",
+        type=int,
+        default=1,
+        help="Number of training runs with seeds seed, seed+1, ...; keeps best val across trials",
+    )
     args = parser.parse_args()
 
-    train(
-        epochs=args.epochs,
-        lr=args.lr,
-        batch_size=args.batch_size,
-        beta=args.beta,
-        num_steps=args.num_steps,
-        val_split=args.val_split,
-        train_csv_path=args.train_csv,
-        test_csv_path=args.test_csv,
-    )
+    os.makedirs("results/models", exist_ok=True)
+    archive_dir = os.path.join("results", "other model")
+    os.makedirs(archive_dir, exist_ok=True)
+    meta_path = "results/models/best_model_meta.json"
+
+    overall_best_val = float("-inf")
+    overall_best_trial = None
+    overall_best_test = None
+    overall_best_epoch = None
+
+    for t in range(args.trials):
+        trial_seed = args.seed + t
+        trial_ckpt = (
+            None
+            if args.trials == 1
+            else f"results/models/trial_{t + 1}_best.pth"
+        )
+        _, _, test_acc, best_val_acc, best_epoch = train(
+            epochs=args.epochs,
+            lr=args.lr,
+            batch_size=args.batch_size,
+            beta=args.beta,
+            num_steps=args.num_steps,
+            val_split=args.val_split,
+            train_csv_path=args.train_csv,
+            test_csv_path=args.test_csv,
+            seed=trial_seed,
+            experiment_num=t + 1,
+            ckpt_path=trial_ckpt,
+        )
+        saved_msg = trial_ckpt or "results/models/best_model.pth"
+        archive_path = os.path.join(archive_dir, f"trial_{t + 1}_best.pth")
+        shutil.copyfile(saved_msg, archive_path)
+        print(
+            f"\nTrial {t + 1}/{args.trials} | best val {best_val_acc:.2%} (epoch {best_epoch}) | "
+            f"test {test_acc:.2%} | saved {saved_msg} | archived {archive_path}\n"
+        )
+
+        if best_val_acc > overall_best_val:
+            overall_best_val = best_val_acc
+            overall_best_trial = t + 1
+            overall_best_test = test_acc
+            overall_best_epoch = best_epoch
+            if trial_ckpt is not None:
+                shutil.copyfile(trial_ckpt, "results/models/best_model.pth")
+
+    if args.trials > 1:
+        print("=" * 60)
+        print(
+            f"Overall best: trial {overall_best_trial} | val {overall_best_val:.2%} "
+            f"(epoch {overall_best_epoch}) | test {overall_best_test:.2%}"
+        )
+        print("Copied to results/models/best_model.pth")
+        print("=" * 60)
+
+    meta = {
+        "best_val_acc": overall_best_val,
+        "best_test_acc": overall_best_test,
+        "best_trial": overall_best_trial,
+        "best_epoch": overall_best_epoch,
+        "num_trials": args.trials,
+        "seed_base": args.seed,
+    }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
+    print(f"Wrote {meta_path}")
